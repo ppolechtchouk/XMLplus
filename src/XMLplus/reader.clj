@@ -1,4 +1,4 @@
-(ns xml+.reader
+(ns XMLplus.reader
   (:import [org.xml.sax InputSource Attributes SAXException] 
 	   [java.io StringReader BufferedReader Reader File FileReader]
 	   [javax.xml.parsers SAXParser SAXParserFactory])
@@ -9,15 +9,33 @@
    :constructors {[] []}
    :state state))
 
-					; Utility fns
 
-					; TODO pre-treat text that is being parsed to process the pre-formatted text
-					; 1. replace the content of all <pre> tags by an id
-					; 2. store the content in a map: id content
-					; 3. parse the resulting XML
-					; 4. in the DOM replace all child text nodes of <pre> tags by the content based on id
+
+(defrecord XMLNode [tag attrs content])
+(deftype State [^:unsynchronized-mutable stack  ^:unsynchronized-mutable sb]
+  IStack
+  (peek [_] (peek stack))
+  (pop [_] (let [x (peek stack)]
+             (set! stack (pop stack))
+             x))
+  (push [_ obj] (set! stack (conj stack obj))) ; add consistency check?
+  IContent
+  (add-content [_ obj]
+    (let [e (pop this)]
+      (push this (assoc :content (conj (or (:content e) []) obj)))))
+  IChars
+  (append-chars [_ ^chars ch start length]
+    (when-not sb
+      (StringBuilder. (int length)))
+    (.append sb ch (int start) (int length)))
+  (push-chars [_]
+    (add-content this (str sb))
+    (set! sb nil)))
+
+
 
 (def ^{:dynamic true} *ignore-whitespace-only-text* true) ; whitespace-only text nodes will be dropped
+
 
 (defn map-atts
   "Creates a map out of attributes names and values. Returns attributes map or nil if none" 

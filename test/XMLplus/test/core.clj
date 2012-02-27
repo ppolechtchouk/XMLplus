@@ -1,5 +1,5 @@
-(ns xml+.test.core
-  (:use [xml+.core])
+(ns XMLplus.test.core
+  (:use [XMLplus.core])
   (:use [clojure.test]))
 
 (deftest replace-me ;; FIXME: write
