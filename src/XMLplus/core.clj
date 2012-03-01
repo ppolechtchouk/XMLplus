@@ -6,8 +6,15 @@
   "Print the x as xml. If tabulation is supplied it will be used"
   ([x] (emit x nil))
   ([x tab]
+     (print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
      (binding [node/*tab-step* (when tab tab)]
        (node/emit-element x tab))))
+
+(defn emit->str
+  "Same as emit, only returns a string rather than prints it"
+  ([x] (emit->str x nil))
+  ([x tab] (with-out-str (emit x tab))))
+
 
 (defn parse
   "Parses an loads the source, and returns a tree of a XMLplus.node.XMLNode records. This are compatible with the return of xml/parse

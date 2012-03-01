@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<tml xmlns="http://www.ingenico.com/tml"><!--These are declared in the service varlib 
+[:vardcl {:name :return_screen, :value "#start"}][:vardcl {:name :txn_id, :type :integer}][:vardcl {:name :amount}][:vardcl {:name :currency, :value "AUD"}][:vardcl {:name :service_description}]-->
+<screen id="start"><next uri="#start"><variant key="1" uri="#ok" /><variant key="2" uri="#rejected" /><variant key="3" uri="#reversal" /></next><display><table class="display"><tr class="header"><td>Choose Transaction Outcome</td></tr><tr class="body"><td>1 - OK<br />2 - Rejected<br />3 - Reversal</td></tr></table></display></screen><!--Succesful transction-->
+<screen id="ok" next="tmlvar:return_screen"><setvar lo="1" name="payment.txn_result" /></screen><screen id="rejected" next="tmlvar:return_screen"><setvar lo="0" name="payment.txn_result" /></screen><screen id="reversal" next="tmlvar:return_screen"><setvar lo="1" name="payment.txn_result" /><setvar lo="reversal" name="payment.trans_type" /></screen></tml>
