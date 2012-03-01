@@ -1,6 +1,9 @@
-# xml+
+# XMLplus
 
-FIXME: write description
+An XML parser / writer compatible with standard clojure.xml but with expanded functionality:
+* Fully compatible with xml-zip 
+* Can create comment nodes (i.e. contents of <!-- text -->)
+* Can emit with tabulations
 
 ## Usage
 
