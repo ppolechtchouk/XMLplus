@@ -1,5 +1,11 @@
+;; compile all records and gen-class
+(compile 'XMLplus.node)
+(compile 'XMLplus.writer)
+(compile 'XMLplus.reader)
+
+;; start code
 (ns XMLplus.core
-  (:require [XMLplus.node :as node]
+  (:require [XMLplus.writer :as writer]
             [XMLplus.reader :as reader]))
 
 (defn emit
@@ -7,8 +13,8 @@
   ([x] (emit x nil))
   ([x tab]
      (print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
-     (binding [node/*tab-step* (when tab tab)]
-       (node/emit-element x tab))))
+     (binding [writer/*tab-step* (when tab tab)]
+       (writer/emit-element x tab))))
 
 (defn emit->str
   "Same as emit, only returns a string rather than prints it"
