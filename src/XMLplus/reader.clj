@@ -30,13 +30,19 @@
   (append-string [_ s] "Appends s to the text buffer")
   (push-chars [_] "Pushes the text buffer to the :content vector of the node at the at the top of the stack. Clears the text buffer"))
 
-(deftype State [^:unsynchronized-mutable stack  ^:unsynchronized-mutable sb]
+(defprotocol IXMLns
+  "Function for keeping track of XML namespace"
+  (addNamespace [_ prefix uri] "Add namespace to the namespace mapping")
+  (currentNamespaces [_] "Returns current namespace map")
+  (takeNamespaces [_] "Returns attribute map for all namespaces and clear namespace map"))
+
+(deftype State [^:unsynchronized-mutable node-stack  ^:unsynchronized-mutable sb ^:unsynchronized-mutable xmlns]
   INodeStack
-  (current-node [_] (peek stack))
-  (pop-node [_] (let [x (peek stack)]
-             (set! stack (pop stack))
+  (current-node [_] (peek node-stack))
+  (pop-node [_] (let [x (peek node-stack)]
+             (set! node-stack (pop node-stack))
              x))
-  (push-node [_ obj] (set! stack (conj stack obj))) ; add consistency check?
+  (push-node [_ obj] (set! node-stack (conj node-stack obj))) ; add consistency check?
   IContent
   (add-content [this obj]
     (let [e (pop-node this)]
@@ -53,7 +59,16 @@
   (push-chars [this]
     (when sb
       (add-content this (str sb))
-      (set! sb nil))))
+      (set! sb nil)))
+  IXMLns
+  (addNamespace [_ prefix uri]
+    ; add consistency check?
+    (set! xmlns (merge xmlns {(if prefix :xmlns (keyword (str "xmlns:" prefix))) uri})))
+  (currentNamespaces [_] xmlns)
+  (takeNamespaces [_]
+    (let [x xmlns]
+      (set! xmlns nil)
+      x)))
 
 
 (def ^:dynamic *parse-comments* false) ; add comments
@@ -65,7 +80,9 @@
 (defn whitespace?
   "Returns true if all chars in the sub-array are whitespace or there are no chars to check"
   [^chars ch start length]
-  (loop [idx start left length]
+  (loop [idx start
+         left (dec length) ; to avoid trailing char
+         ]
     (cond
      (not (Character/isWhitespace (aget ch idx)))
      false
@@ -87,7 +104,7 @@
 
 
 (defn -init [] ; class constructor
-  [[] (State. nil nil)]) ; state will be used for building DOM
+  [[] (State. nil nil nil)]) ; state will be used for building DOM
 
 
 ;; DefaultHandler methods
@@ -109,14 +126,17 @@
 		     localName,
 		     qName,
 		      ^org.xml.sax.Attributes attributes]
-  ;(println (str "Start element " localName  " qn: " qName))
+  #_(println (str "Start element " localName  " qn: " qName " uri: " uri))
   ;; if there is any text, add it to the :content of the parent element
   (push-chars (.state this))
   ;; add a new element to the stack
+  ;; preserve namespace uri
   (push-node (.state this)
-        (node/create (keyword qName) ; possibly intern as symbol to keep reusing the keywords?
-                     (map-atts attributes)
-                     nil)))
+             (with-meta
+               (node/create (keyword qName) ; possibly intern as symbol to keep reusing the keywords?
+                      (merge (takeNamespaces (.state this)) (map-atts attributes))
+                      nil)
+               {:uri uri})))
 
 (defn  -endElement [this,
 		     uri,
@@ -127,6 +147,13 @@
   (push-chars (.state this))
   ;; add current element to the :content of the parent
   (add-content (.state this) (pop-node (.state this))))
+
+
+(defn -startPrefixMapping [this,
+                           prefix,
+                           uri]
+                                        ;(println (str "Prefix mapping: prefix -> " prefix " uri -> " uri))
+  (addNamespace (.state this) prefix uri))
 
 (defn -characters [ this,
 		   ^chars ch,
@@ -139,7 +166,6 @@
                 (.append ch start length)
                 (.toString))
             "\""))
-  
   (when-not (and *ignore-whitespace-only-text*
                  (whitespace? ch start length))
     (append-chars (.state this) ch start length)))
