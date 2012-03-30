@@ -38,5 +38,5 @@ tag, attrs, content - explicit params"
 (defn create-comment
   "Returns an XMLNode instance that represents the comment node with the given comment string"
   [s]
-  (create :!-- nil (str s)))
+  (create :!-- nil [(str s)]))
 
