@@ -31,7 +31,8 @@
           (print (str \newline tab "<" (name (:tag this))))
           (when (:attrs this)
             (doseq [attr (:attrs this)]
-              (print (str " " (name (key attr)) "=\"" (if (keyword? (val attr)) (name (val attr)) (val attr)) "\""))))
+              (when (val attr)
+                (print (str " " (name (key attr)) "=\"" (if (keyword? (val attr)) (name (val attr)) (val attr)) "\"")))))
           (if (:content this)
             (do
               (print ">")
